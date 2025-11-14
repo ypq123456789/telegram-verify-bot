@@ -61,7 +61,7 @@
 #### 6️⃣ 部署代码
 
 1. 进入 **Worker Edit code**
-2. 复制本项目worker.js代码到编辑器
+2. 复制本项目 [worker.js](https://github.com/Squarelan/telegram-verify-bot/blob/main/worker.js)代码到编辑器
 3. 点击 **Deploy**
 
 #### 7️⃣ 注册 Webhook
