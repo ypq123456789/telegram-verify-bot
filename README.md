@@ -35,8 +35,8 @@
 
 #### 1️⃣ 获取 Telegram 配置
 
-- 从 @BotFather 获取 Bot Token，并执行 `/setjoingroups` 禁止 Bot 被添加到群组
-- 从 @username_to_id_bot 获取你的用户 ID
+- 从 [@BotFather](https://t.me/BotFather) 获取 Bot Token，并执行 `/setjoingroups` 禁止 Bot 被添加到群组
+- 从 [@username_to_id_bot](https://t.me/username_to_id_bot) 获取你的用户 ID
 
 #### 2️⃣ 生成 Webhook 密钥
 
@@ -70,53 +70,45 @@
 **配置步骤：**
 
 1. 进入 Workers KV
-2. 创建新的 KV 命名空间：`nfd`
+2. 创建新的 KV 命名空间：`lan`
 3. 在 Worker 设置中，进入 Settings → Bindings → Add binding
-   - Variable name： `nfd`
-   - KV namespace： 选择刚创建的 `nfd`
-4. 部署 worker-kv.js 代码
+   - Variable name： `lan`
+   - KV namespace： 选择刚创建的 `lan`
+4. 部署 ./worker-KV.js 代码
 
 **KV 绑定配置：**
 
-// 在代码中访问
-let nfd = env.nfd;
-
+在代码中访问
+```javascript
+let lan = env.lan;
+```
 
 **存储结构：**
 
-whitelist-{userId} # 白名单标记
-verify-{userId} # 当前验证码答案
-verify-attempts-{userId} # 验证尝试次数
-verified-{userId} # 验证成功标记（3天过期）
-isblocked-{userId} # 屏蔽标记
-msg-map-{messageId} # 消息映射关系
-lastmsg-{userId} # 上次消息时间戳
-whitelist-data # 白名单数据集合
+| 存储键 | 说明 |
+|------|------|
+| whitelist-{userId} | 白名单标记 |
+| verify-{userId} | 当前验证码答案 |
+| verify-attempts-{userId} | 验证尝试次数 |
+| verified-{userId} | 验证成功标记（3天过期） |
+| isblocked-{userId} | 屏蔽标记 |
+| msg-map-{messageId} | 消息映射关系 |
+| lastmsg-{userId} | 上次消息时间戳 |
+| whitelist-data | 白名单数据集合 |
 
 
-##### 💾 方案 B：D1 版本（worker-d1.js）
+##### 💾 方案 B：D1 版本（worker-D1.js）
 
 **适合：** 中大型应用，需要结构化查询，数据持久化
 
 **配置步骤：**
 
-1. 创建 D1 数据库：
-
-wrangler d1 create telegram-verify-bot
-
-
-2. 获取数据库 ID，复制输出中的 `database_id`
-
-3. 在 wrangler.toml 中配置：
-
-[[d1_databases]]
-binding = "LAN"
-database_name = "telegram-verify-bot"
-database_id = "你的数据库ID"
-
-
-4. 部署 worker-d1.js 代码
-
+1. 进入 D1 SQL database：
+2. 创建名为`lan`的数据库
+3. 在 Worker 设置中，进入 Settings → Bindings → Add binding
+   - Variable name： `lan`
+   - D1 database： 选择刚创建的 `lan`
+4. 部署 ./worker-D1.js 代码
 5. 初始化数据库表：
 
 https://你的worker.workers.dev/initDatabase
@@ -124,45 +116,35 @@ https://你的worker.workers.dev/initDatabase
 
 **D1 数据库表结构：**
 
+| 表名 | 用途 |
+|-----|------|
+| whitelist | 白名单用户 |
+| verification | 验证码状态 |
+| verified_users | 验证成功用户 |
+| blocked_users | 屏蔽用户 |
+| message_mappings | 消息映射 |
+| message_rates | 消息频率限制 |
+
+**详细 SQL 语句：**
+```javascript
 -- 白名单用户
-CREATE TABLE whitelist (
-user_id TEXT PRIMARY KEY,
-created_at INTEGER
-);
+CREATE TABLE whitelist (user_id TEXT PRIMARY KEY,created_at INTEGER);
 
 -- 验证码状态
-CREATE TABLE verification (
-user_id TEXT PRIMARY KEY,
-answer TEXT,
-attempts INTEGER DEFAULT 0,
-created_at INTEGER
-);
+CREATE TABLE verification (user_id TEXT PRIMARY KEY,answer TEXT,attempts INTEGER DEFAULT 0,created_at INTEGER);
 
 -- 验证成功用户
-CREATE TABLE verified_users (
-user_id TEXT PRIMARY KEY,
-expiry_time INTEGER
-);
+CREATE TABLE verified_users (user_id TEXT PRIMARY KEY,expiry_time INTEGER);
 
 -- 屏蔽用户
-CREATE TABLE blocked_users (
-user_id TEXT PRIMARY KEY,
-blocked_at INTEGER
-);
+CREATE TABLE blocked_users (user_id TEXT PRIMARY KEY,blocked_at INTEGER);
 
 -- 消息映射
-CREATE TABLE message_mappings (
-mapping_key TEXT PRIMARY KEY,
-mapped_value TEXT,
-created_at INTEGER
-);
+CREATE TABLE message_mappings (mapping_key TEXT PRIMARY KEY,mapped_value TEXT,created_at INTEGER);
 
 -- 消息频率限制
-CREATE TABLE message_rates (
-user_id TEXT PRIMARY KEY,
-last_message_time INTEGER
-);
-
+CREATE TABLE message_rates (user_id TEXT PRIMARY KEY,last_message_time INTEGER);
+```
 
 **D1 优势：**
 
@@ -176,8 +158,8 @@ last_message_time INTEGER
 
 1. 进入 Worker Edit code
 2. 选择对应版本的代码：
-   - KV 版本： 复制 worker-kv.js
-   - D1 版本： 复制 worker-d1.js
+   - KV 版本： 复制 ./worker-KV.js
+   - D1 版本： 复制 ./worker-D1.js
 3. 点击 Deploy
 
 #### 7️⃣ 注册 Webhook
@@ -285,54 +267,54 @@ https://xxx.workers.dev/registerWebhook
 
 ### 时间换算对照表
 
-1 分钟 = 60 秒 = 60000 毫秒
-5 分钟 = 300 秒 = 300000 毫秒
-1 小时 = 3600 秒 = 3600000 毫秒
-1 天 = 86400 秒 = 86400000 毫秒
-3 天 = 259200 秒 = 259200000 毫秒
-7 天 = 604800 秒 = 604800000 毫秒
-30 天 = 2592000 秒 = 2592000000 毫秒
+- 1 分钟 = 60 秒 = 60000 毫秒
+- 5 分钟 = 300 秒 = 300000 毫秒
+- 1 小时 = 3600 秒 = 3600000 毫秒
+- 1 天 = 86400 秒 = 86400000 毫秒
+- 3 天 = 259200 秒 = 259200000 毫秒
+- 7 天 = 604800 秒 = 604800000 毫秒
+- 30 天 = 2592000 秒 = 2592000000 毫秒
 
 
 ### 修改验证码过期时间
 
 编辑代码顶部的常量：
-
-// 改为 10 分钟过期
+```javascript
+//改为 10 分钟过期
 const VERIFICATION_TTL = 600;
 
-// 改为 2 小时过期
+//改为 2 小时过期
 const VERIFICATION_TTL = 7200;
-
+```
 
 ### 修改验证成功有效期
 
 编辑代码顶部的常量：
-
-// 改为 7 天有效期
+```javascript
+//改为 7 天有效期
 const VERIFIED_TTL = 604800;
 
-// 改为 1 天有效期
+//改为 1 天有效期
 const VERIFIED_TTL = 86400;
-
+```
 
 ### 修改最大验证尝试次数
 
 编辑代码顶部的常量：
-
-// 改为 5 次尝试
+```javascript
+//改为 5 次尝试
 const MAX_VERIFY_ATTEMPTS = 5;
 
-// 改为 20 次尝试
+//改为 20 次尝试
 const MAX_VERIFY_ATTEMPTS = 20;
-
+```
 
 ### 启用通知功能
 
 默认关闭，要启用请改为：
-
+```javascript
 const enable_notification = true;
-
+```
 
 启用后，每次用户发送消息超过 24 小时后会触发一次通知。
 
@@ -344,11 +326,11 @@ const enable_notification = true;
 
 - **文件路径：** `fraud.db`
 - **格式：** 每行一个 UID，如：
-
+```javascript
 123456789
 987654321
 111111111
-
+```
 
 - **更新方式：** 通过 PR 或 Issue 补充
 
@@ -366,7 +348,7 @@ const enable_notification = true;
 
 A: 系统会自动生成新的验证码。只需在5分钟内点击答案即可。超过5分钟会自动清除验证码，下次发消息时需要重新验证。
 
-**Q: 为什么出现 10 个数学题而不是 4 个？**
+**Q: 为什么出现 6 个数学题答案而不是 4 个？**
 
 A: 本版本改进为 6 个选项（2行×3列布局），提高了安全性和用户体验。用户从中选择正确答案。
 
@@ -388,14 +370,13 @@ A: 支持文本、图片、视频、文件等 Telegram 支持的所有媒体类�
 **Q: 如何自定义欢迎消息？**
 
 A: 编辑代码中 `/start` 命令的 text 字段即可：
-
-if (message.text === '/start') {
-return sendMessage({
-chat_id: message.chat.id,
-text: '你的自定义欢迎消息内容' // ← 改这里
+```javascript
+if (message.text === '/start') {return sendMessage({
+    chat_id: message.chat.id,
+    text: '你的自定义欢迎消息内容' // ← 改这里
 });
 }
-
+```
 
 **Q: KV 和 D1 哪个更好？**
 
@@ -405,18 +386,18 @@ A:
 |------|----|----|
 | 学习难度 | 简单 | 中等 |
 | 查询能力 | 简单键值 | SQL查询 |
-| 数据量 | <10MB | 无限制 |
+| 数据量 | 1GB | 5GB |
 | 性能 | 快速 | 快速 |
-| 价格 | 免费额度100K请求/月 | 免费额度更高 |
+| 价格 | 免费额度1000次/天 | 免费额度100,000次/天 |
 | 推荐用途 | 小型应用 | 中大型应用 |
 
 **Q: 如何修改验证有效期？**
 
 A: 编辑代码顶部的常量：
-
+```javascript
 // D1 版本或 KV 版本
 const VERIFIED_TTL = 259200; // 改为你需要的秒数
-
+```
 
 然后重新部署。
 
@@ -426,21 +407,14 @@ A:
 - **KV 版本：** 进入 Cloudflare Dashboard → Workers KV → 查看值
 - **D1 版本：** 进入 Cloudflare Dashboard → D1 Databases → 使用查询工具
 
-**Q: 性能如何？**
-
-A:
-- 响应时间：<100ms
-- 支持用户数：KV 版本 100+ 用户，D1 版本 1000+ 用户
-- 消息延迟：<1 秒
-
 ---
 
 ## 📝 项目结构
 
 telegram-verify-bot/
 ├── README.md # 项目说明文档
-├── worker-kv.js # KV 版本（使用 Cloudflare KV）
-├── worker-d1.js # D1 版本（使用 Cloudflare D1 数据库）
+├── worker-KV.js # KV 版本（使用 Cloudflare KV）
+├── worker-D1.js # D1 版本（使用 Cloudflare D1 数据库）
 ├── wrangler.toml # Wrangler 配置文件
 └── fraud.db # 欺诈数据库（行分隔的 UID 列表）
 
@@ -449,14 +423,14 @@ telegram-verify-bot/
 
 | 文件 | 适用场景 | 特点 |
 |-----|--------|------|
-| worker-kv.js | 小型应用、快速部署 | 无需初始化，开箱即用 |
-| worker-d1.js | 中大型应用、需要查询 | 需要初始化表，功能完整 |
+| worker-KV.js | 小型应用、快速部署 | 无需初始化，开箱即用 |
+| worker-D1.js | 中大型应用、需要查询 | 需要初始化表，功能完整 |
 
 ---
 
 ## 🔄 版本迭代记录
 
-### v2.0.0（当前版本）
+### v2.0（当前版本）
 
 **✅ 新增功能：**
 
